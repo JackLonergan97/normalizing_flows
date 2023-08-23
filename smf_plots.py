@@ -162,17 +162,18 @@ def emulator_data(emulator, lines, num_iterations):
 
     # initializing arrays to go from latent space to data
     n = 0
-    reg_MassInfall = []
-    reg_MassBound = []
+    reg_massInfall = []
+    reg_massBound = []
     reg_concentration = []
-    x_reg = []
-    y_reg = []
-    while n <= num_iterations:
-        print('starting iteration ' + str(n))
+    reg_x = []
+    reg_y = []
+    sample_amount = 1.5
+
+    while n < num_iterations:
+        print('starting iteration ' + str(n + 1))
         x = np.arange(stats.nbinom.ppf(0, r, p),stats.nbinom.ppf(0.9999999999999999, r, p))
         N = np.random.choice(x, p = stats.nbinom.pmf(x,r,p))
         print('starting sampling emulator points')
-        sample_amount = 1.5
         samples = emulator.distribution.sample(sample_amount*N)
         print('ending sampling emulator points')
         x, _ = emulator.predict(samples)
@@ -182,14 +183,14 @@ def emulator_data(emulator, lines, num_iterations):
         if len(xt[clip]) > N:
             data = xt[clip][:int(N)]
         elif len(xt[clip]) < N:
-            print('Not enough data points are being sampled in iteration ' + str(n))
+            print('Not enough data points are being sampled in iteration ' + str(n + 1))
             sample_amount += 0.5
             continue
         else:
             data = xt[clip]
         print('starting the append process')
-        reg_MassInfall.append(massHost * (10**data[:,0]))
-        reg_MassBound.append(massHost * (10**data[:,2]))
+        reg_massInfall.append(massHost * (10**data[:,0]))
+        reg_massBound.append(massHost * (10**data[:,2]))
         reg_concentration.append(data[:,1])
         r_kpc = 1000 * radiusVirialHost * (10**data[:,4])
         x = [0]*len(r_kpc)
@@ -204,8 +205,8 @@ def emulator_data(emulator, lines, num_iterations):
 
             x[i] = r_kpc[i] * np.cos(phi) * np.sin(theta)
             y[i] = r_kpc[i] * np.sin(phi) * np.sin(theta)
-        x_reg.append(x)
-        y_reg.append(y)
+        reg_x.append(x)
+        reg_y.append(y)
         print('ending the append process')
         n += 1
 
@@ -269,9 +270,13 @@ for model, color in zip(dm_models, colors):
     positionOrbitalZ = f['Outputs/Output1/nodeData/positionOrbitalZ']
     radius = np.sqrt(positionOrbitalX[subhalos]**2+positionOrbitalY[subhalos]**2+positionOrbitalZ[subhalos]**2)[:]
 
-    data = emulator_data(emulator, lines, countTree)
-    em_massInfall = np.array(data[0])
-    em_massBound = np.array(data[3])
+    data = emulator_data(emulator, lines, 2)
+    print('done with the data = emulator_data(...) line')
+
+    # turning nested arrays into a single array
+    from itertools import chain
+    em_massInfall = list(chain(*data[0]))
+    em_massBound = list(chain(*data[3]))
 
     w = weight[subhalos]
     i = np.arange(0, w.size, 1, dtype=int)
