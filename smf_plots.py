@@ -178,8 +178,13 @@ def emulator_data(emulator, lines, num_iterations):
         print('ending sampling emulator points')
         x, _ = emulator.predict(samples, batch_size=65336)
         xt = norm_transform_inv(x, data_min, data_max, -1, 1)
-        # r = np.random.randn(len(xt[:,0]))
-        clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) # & (r < 10**xt[:,-1])
+        r = np.random.random(size = len(xt[:,0]))
+        pre_clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) # & (r < 10**xt[:,-1])
+        clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0)# & (r < 10**xt[:,-1])
+        print('length of pre_clip: ' + str(pre_clip.sum()))
+        print('length of clip: ' + str(clip.sum()))
+        print('r is: ' + str(r[0:20]))
+        print('10**xt[:,-1] is ' + str(10**xt[:,-1][0:20]))
 
         if len(xt[clip]) > N:
             data = xt[clip][:int(N)]
@@ -227,11 +232,11 @@ aquarius = [] # creating an array to store mass arrays defined by Aquarius paper
 
 for model, color in zip(dm_models, colors):
     print(model)
-    if (model != 'CDM') and (model != 'WDM') and  (model != 'CDM_cat') and  (model != 'CDM_res6'):
+    if (model != 'CDM') and (model != 'WDM') and (model != 'CDM_cat') and (model != 'CDM_res6') and (model != 'CDM_res8_exp_half'):
         raise Exception('The dark matter model in .sh file written after "normalizing_flows.py" was entered incorrectly!')
 
-    # necessary_data = open("necessary_data_" + model + ".txt", "r")
-    necessary_data = open("necessary_data_test.txt", 'r')
+    necessary_data = open("necessary_data_" + model + ".txt", "r")
+    # necessary_data = open("necessary_data_test.txt", 'r')
     lines = necessary_data.readlines()
     necessary_data.close()
 
@@ -243,7 +248,8 @@ for model, color in zip(dm_models, colors):
     f = h5py.File('darkMatterOnlySubHalos' + model + '.hdf5', 'r')
     mergerTreeBuildMassesGroup = f['Parameters/mergerTreeBuildMasses']
     massResolutionGroup = f['Parameters/mergerTreeMassResolution']
-    massResolution = massResolutionGroup.attrs['massResolution']
+    # massResolution = massResolutionGroup.attrs['massResolution']
+    massResolution = 10e7
     treeIndex = f['Outputs/Output1/nodeData/mergerTreeIndex']
     weight = f['Outputs/Output1/nodeData/nodeSubsamplingWeight']
     max_weight = np.max(weight)
@@ -253,7 +259,8 @@ for model, color in zip(dm_models, colors):
     # massInfall = f['Outputs/Output1/nodeData/massHaloEnclosedCurrent'][:]
     centrals = (isCentral[:] == 1)
     massHost = massInfall[centrals][0]
-    countTree =  mergerTreeBuildMassesGroup.attrs['treeCount'][0]
+    # countTree =  mergerTreeBuildMassesGroup.attrs['treeCount'][0]
+    countTree = 1
 
     massBound = f['Outputs/Output1/nodeData/satelliteBoundMass'][:]
     subhalos = (isCentral[:] == 0) & (massInfall[:] > 2.0*massResolution)
@@ -273,7 +280,7 @@ for model, color in zip(dm_models, colors):
             massBound[i] = massInfall[i]
     countSubhalosMean = np.mean(countSubhalos)
 
-    num_iterations = 200
+    num_iterations = 1
     data = emulator_data(emulator, lines, num_iterations)
 
     # turning nested arrays into a single array
@@ -306,13 +313,13 @@ for model, color in zip(dm_models, colors):
 
     gal_infall = np.cumsum(np.histogram(massInfall[subhalos],mass,weights=w)[0][::-1])[::-1]/countTree
     gal_bound = np.cumsum(np.histogram(massBound[subhalos],mass,weights=w)[0][::-1])[::-1]/countTree
-    em_infall = np.cumsum(np.histogram(em_massInfall,mass, weights = em_weights)[0][::-1])[::-1]/num_iterations
-    em_bound = np.cumsum(np.histogram(em_massBound,mass, weights = em_weights)[0][::-1])[::-1]/num_iterations
+    em_infall = np.cumsum(np.histogram(em_massInfall,mass)[0][::-1])[::-1]/num_iterations
+    em_bound = np.cumsum(np.histogram(em_massBound,mass)[0][::-1])[::-1]/num_iterations
 
     # Adding a normalization constant to shift the emulator SMF curves downwards
-    C = gal_infall[0]/em_infall[0]
-    em_infall = C*em_infall
-    em_bound = C*em_bound
+    #C = gal_infall[0]/em_infall[0]
+    #em_infall = C*em_infall
+    #em_bound = C*em_bound
 
     # Setting up code to plot equation 4 from the Aquarius paper: N(M) = (a_0/((n + 1)*m_0^n)) * M^{n + 1}
     # the (1e13/1.8e12) factor is the conversion factor from the Aquarius host halo mass to our original host halo mass
