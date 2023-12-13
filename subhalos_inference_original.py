@@ -316,12 +316,9 @@ num_iterations = 1
 
 # Constructing initialized parameters
 output_path = os.getcwd() + '/emulator_inference_output_' + dm_model + '/'
-job_index = sys.argv[2]
-print('sys.argv[2] is:')
-print(sys.argv[2])
-#job_index = 1
+#job_index = sys.argv[2]
+job_index = 1
 n_keep = 100
-#n_keep = 1
 summary_statistic_tolerance = 1e5
 lens_data = 'B1422'
 from quadmodel.data.b1422 import B1422
@@ -369,13 +366,12 @@ print(param_names)
 f.close()
 print('simulation finished!')
 
-#accepted_parameters = np.loadtxt(output_path + 'job_'+str(job_index)+'/parameters.txt', skiprows=1)
-#print('ACCEPTED PARAMETERS:')
-#print(accepted_parameters)
+# accepted_parameters = np.loadtxt(output_path + 'job_'+str(job_index)+'/parameters.txt', skiprows=1)
+# print('ACCEPTED PARAMETERS:')
+# print(accepted_parameters)
 # the first set of parameters are the ones specified in kwargs_realization (see cell #2), the rest are the source size,
 # macromodel parameters, and the last parameter is the summary statistic
 
 # accepeted_mags = np.loadtxt(output_path + 'job_'+str(job_index)+'/fluxes.txt')
 # print('\nACCEPTED MAGNIFICATIONS:')
 # print(accepeted_mags)
-print('code executed!')
