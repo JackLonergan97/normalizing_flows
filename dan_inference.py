@@ -158,7 +158,7 @@ class RealNVP(keras.Model):
 emulator = RealNVP(num_coupling_layers=12)
 emulator.load_weights('../data/danModel')
 
-def dan_emulator_data(emulator, lines, num_iterations):
+def dan_emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
 
     min_array = np.array(lines[0])
     max_array = np.array(lines[1])
@@ -168,6 +168,7 @@ def dan_emulator_data(emulator, lines, num_iterations):
     # initializing arrays to go from latent space to data
     n = 0
     KPC_TO_MPC = 1e-3
+    kpc_per_arcsec = 5.013831007195271 # at z_lens = 0.34
     reg_massInfall = []
     reg_massBound = []
     reg_concentration = []
@@ -219,16 +220,16 @@ def dan_emulator_data(emulator, lines, num_iterations):
         print('ending the append process')
         n += 1
 
-    return [reg_massInfall, reg_concentration, reg_massBound, reg_redshift, reg_orbitalRadius, reg_truncationRadius, np.array(reg_x), np.array(reg_y)]
+    return reg_massInfall, reg_concentration, reg_massBound, reg_redshift, reg_orbitalRadius, reg_truncationRadius, np.array(reg_x), np.array(reg_y)
 
 num_iterations = 1
 
 # Constructing initialized parameters
 output_path = os.getcwd() + '/em_test/'
-#job_index = sys.argv[2]
-job_index = 1
-#n_keep = 100
-n_keep = 1
+job_index = sys.argv[2]
+#job_index = 1
+n_keep = 100
+#n_keep = 1
 summary_statistic_tolerance = 1e5
 lens_data = 'B1422'
 from quadmodel.data.b1422 import B1422
@@ -243,40 +244,58 @@ realization_priors['cone_opening_angle_arcsec'] = ['FIXED', 8.0]
 # Testing out things that are in the "example_summary_statistic_distribution.py" script
 realization_priors['sigma_sub'] = ['FIXED', 3/5 * 0.357]
 realization_priors['log_mlow'] = ['FIXED', 8.0]
+realization_priors['log_mhigh'] = ['FIXED', 10.0]
 
 # WDM Specific parameters (keep commented out when working with CDM)
 #realization_priors['sigma_sub'] = ['UNIFORM', 0.0, 0.01]
 #realization_priors['log_mc'] = ['UNIFORM', 4.8, 10.0]
 
-f = h5py.File('dan_subhalo_data.hdf5', 'r')
-m_infall = f['m_infall'][:]
-c = f['c'][:]
-m_bound = f['m_bound'][:]
-z_infall = f['z_infall'][:]
-r3d = f['r3d'][:]
-rt = f['rt'][:]
-x = f['x'][:]
-y = f['y'][:]
-f.close()
+#f = h5py.File('dan_subhalo_data.hdf5', 'r')
+#m_infall = f['m_infall'][:]
+#c = f['c'][:]
+#m_bound = f['m_bound'][:]
+#z_infall = f['z_infall'][:]
+#r3d = f['r3d'][:]
+#rt = f['rt'][:]
+#x = f['x'][:]
+#y = f['y'][:]
+#f.close()
 
-emulator_array = [m_infall, c, m_bound, z_infall, r3d, rt, x, y]
+#print('within dan_inference.py')
+#print('number of subhalos: ', len(m_infall))
+#print('infall mass is: ', m_infall[0:5])
+#print('concentration is: ', c[0:5])
+#print('bound mass is: ', m_bound[0:5])
+#print('infall_redshift is: ', z_infall[0:5])
+#print('orbital radius is: ', r3d[0:5])
+#print('truncation radius is: ', rt[0:5])
+#print('x position (arcseconds) is: ', x[0:5])
+#print('y position (arcseconds) is: ', y[0:5])
+#print('')
 
-realization_priors['emulator_input'] = ['FIXED', emulator_array]
+# USE FOR THE SINGLE SUBHALO TEST
+#emulator_array = [m_infall, c, m_bound, z_infall, r3d, rt, x, y]
+
+# USE WHEN WE HAVE A SINGLE POPULATION OF SUBHALOS TO PRODUCE ONE S_LENS VALUE
+#emulator_array = [[m_infall], [c], [m_bound], [z_infall], [r3d], [rt], [x], [y]]
+
+#realization_priors['emulator_input'] = ['FIXED', emulator_array]
+realization_priors['emulator_input'] = ['FIXED', dan_emulator_data]
 
 macromodel_priors = {}
-#macromodel_priors['m4_amplitude_prior'] = [np.random.normal, 0.0, 0.01]
-macromodel_priors['m4_amplitude_prior'] = ['FIXED', 0.005]
+macromodel_priors['m4_amplitude_prior'] = [np.random.normal, 0.0, 0.01]
+#macromodel_priors['m4_amplitude_prior'] = ['FIXED', 0.005]
 
-#macromodel_priors['gamma_macro_prior'] = [np.random.uniform, 1.8, 2.3]
-macromodel_priors['gamma_macro_prior'] = ['FIXED', 2.0]
+macromodel_priors['gamma_macro_prior'] = [np.random.uniform, 1.8, 2.3]
+#macromodel_priors['gamma_macro_prior'] = ['FIXED', 2.0]
 
 # the present lenses also have built-in shear priors determined based on what values get accepted after running ABC;
 # using a broader prior, you will waste some time exploring parameter space that will get rejected
 shear_min, shear_max = lens_data.kwargs_macromodel['shear_amplitude_min'], lens_data.kwargs_macromodel['shear_amplitude_max']
 print(shear_min, shear_max)
 
-#macromodel_priors['shear_strength_prior'] = [np.random.uniform, shear_min, shear_max]
-macromodel_priors['shear_strength_prior'] = ['FIXED', 0.2]
+macromodel_priors['shear_strength_prior'] = [np.random.uniform, shear_min, shear_max]
+#macromodel_priors['shear_strength_prior'] = ['FIXED', 0.2]
 
 # Run the simulation
 forward_model(output_path, job_index, lens_data, n_keep, realization_priors, macromodel_priors,
