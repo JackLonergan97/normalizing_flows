@@ -8,22 +8,51 @@ import tensorflow_probability as tfp
 import h5py
 import os
 from scipy import stats
+import time
+import sys
 import warnings
 warnings.filterwarnings('ignore')
 
-f = h5py.File('darkMatterOnlySubHalos.hdf5', 'r')
+ts = time.time()
+time_format = time.strftime("%H:%M:%S", time.gmtime(ts))
+print('Starting time: ' + str(time_format))
+print(' ')
+
+np.set_printoptions(suppress=True)
+dm_model = sys.argv[1]
+
+#if (dm_model != 'CDM') and (dm_model != 'WDM') and  (dm_model != 'CDM_cat') and (dm_model != 'CDM_res6') & (dm_model != 'CDM_sub_res8'):
+#    raise Exception('The dark matter model in .sh file written after "normalizing_flows.py" was entered incorrectly!')
+
+f = h5py.File('darkMatterOnlySubHalos' + dm_model + '.hdf5', 'r')
 mergerTreeBuildMassesGroup = f['Parameters/mergerTreeBuildMasses']
 massResolutionGroup = f['Parameters/mergerTreeMassResolution']
+
 massTree = mergerTreeBuildMassesGroup.attrs['massTree'][0]
 countTree = mergerTreeBuildMassesGroup.attrs['treeCount'][0]
+
+# specific code for when working with caterpillar simulations
+
+#massTree_array = f['Outputs/Output1/nodeData/hostMassHaloEnclosedCurrent']
+#nodeIsIsolated =  f['Outputs/Output1/nodeData/nodeIsIsolated']
+#countTree = 0
+#for i in range(len(massTree_array)):
+#    if nodeIsIsolated[:][i] == 1:
+#        countTree += 1
+# Setting massTree to a singular value so we can apply a singular clip to the dataset
+#massTree = np.min(massTree_array)
+
+# end of caterpillar simulations specific code
+
 massResolution = massResolutionGroup.attrs['massResolution']
 weight = f['Outputs/Output1/nodeData/nodeSubsamplingWeight']
 treeIndex = f['Outputs/Output1/nodeData/mergerTreeIndex']
 isCentral = f['Outputs/Output1/nodeData/nodeIsIsolated']
-massInfall = f['Outputs/Output1/nodeData/massHaloEnclosedCurrent']
+massInfall = f['Outputs/Output1/nodeData/basicMass']
 massBound = f['Outputs/Output1/nodeData/satelliteBoundMass']
 concentration = f['Outputs/Output1/nodeData/concentration']
-
+truncationRadius = f['Outputs/Output1/nodeData/radiusTidalTruncationNFW']
+scaleRadius = f['Outputs/Output1/nodeData/darkMatterProfileScale']
 redshiftLastIsolated = f['Outputs/Output1/nodeData/redshiftLastIsolated']
 positionOrbitalX = f['Outputs/Output1/nodeData/positionOrbitalX']
 positionOrbitalY = f['Outputs/Output1/nodeData/positionOrbitalY']
@@ -31,13 +60,19 @@ positionOrbitalZ = f['Outputs/Output1/nodeData/positionOrbitalZ']
 satelliteTidalHeating = f['Outputs/Output1/nodeData/satelliteTidalHeatingNormalized']
 radiusVirial = f['Outputs/Output1/nodeData/darkMatterOnlyRadiusVirial']
 velocityVirial = f['Outputs/Output1/nodeData/darkMatterOnlyVelocityVirial']
-subhalos = (isCentral[:] == 0) & (massInfall[:] > 2.0*massResolution)
+radiusProjected = np.sqrt(positionOrbitalX[:]**2+positionOrbitalY[:]**2)
+subhalos = (isCentral[:] == 0) & (massInfall[:] > 2.0*massResolution)# & (radiusProjected < 0.02)
+radiusOrbital = np.sqrt(positionOrbitalX[:]**2+positionOrbitalY[:]**2+positionOrbitalZ[:]**2)
 centrals = (isCentral[:] == 1)
 countSubhalos = np.zeros(countTree)
 for i in range(countTree):
-    selectTree = (isCentral[:] == 0) & (treeIndex[:] == i+1)
+    selectTree = (isCentral[:] == 0) & (massInfall[:] > 2.0*massResolution) & (treeIndex[:] == i+1)
     countSubhalos[i] = np.sum(weight[selectTree])
 countSubhalosMean = np.mean(countSubhalos)
+
+overMassive = (massBound[:] > massInfall[:])
+massBound[overMassive] = massInfall[overMassive]
+
 massHost = massInfall[centrals][0]
 radiusVirialHost = radiusVirial[centrals][0]
 velocityVirialHost = velocityVirial[centrals][0]
@@ -45,8 +80,10 @@ massInfallNormalized = np.log10(massInfall[subhalos]/massHost)
 massBoundNormalized = np.log10(massBound[subhalos]/massInfall[subhalos])
 concentrationNormalized = concentration[subhalos]
 redshiftLastIsolatedNormalized = redshiftLastIsolated[subhalos]
-radiusOrbitalNormalized = np.log10(np.sqrt(+positionOrbitalX[subhalos]**2+positionOrbitalY[subhalos]**2+positionOrbitalZ[subhalos]**2)/radiusVirialHost)
+radiusOrbitalNormalized = np.log10(np.sqrt(positionOrbitalX[subhalos]**2+positionOrbitalY[subhalos]**2+positionOrbitalZ[subhalos]**2)/radiusVirialHost)
 satelliteTidalHeatingNormalized = np.log10(1.0e-6+satelliteTidalHeating[subhalos]/velocityVirial[subhalos]**2*radiusVirial[subhalos]**2)
+truncationRadiusNormalized = np.log10(truncationRadius[subhalos]/radiusVirialHost)
+projectedRadiusNormalized = np.log10(np.sqrt(positionOrbitalX[subhalos]**2 + positionOrbitalY[subhalos]**2)/radiusVirialHost)
 
 data=np.array(
     list(
@@ -56,10 +93,24 @@ data=np.array(
             massBoundNormalized,
             redshiftLastIsolatedNormalized,
             radiusOrbitalNormalized,
-            satelliteTidalHeatingNormalized
+            truncationRadiusNormalized,
+            projectedRadiusNormalized
         )
     )
 )
+
+min_array = np.nanmin(data, axis = 0)
+max_array = np.nanmax(data, axis = 0)
+
+with open('necessary_data_' + dm_model + '.txt', 'w', newline='') as file:
+    file.write(str(min_array).replace('\n','').replace(' ',' ') + '\n')
+    file.write(str(max_array).replace('\n','').replace(' ',' ') + '\n')
+    file.write(str(massTree) + '\n')
+    file.write(str(massResolution) + '\n')
+    file.write(str(massHost) + '\n')
+    file.write(str(radiusVirialHost) + '\n')
+    file.write(str(countSubhalosMean) + '\n')
+    file.close()
 
 def norm_transform(data, min_val, max_val):
     data_min = np.nanmin(data, axis = 0)
@@ -130,13 +181,13 @@ class RealNVP(keras.Model):
 
         # Distribution of the latent space.
         self.distribution = tfp.distributions.MultivariateNormalDiag(
-            loc=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], scale_diag=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+            loc=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], scale_diag= [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         )
         self.masks = np.array(
-            [[1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1]] * (num_coupling_layers // 2), dtype="float32"
+            [[1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1]] * (num_coupling_layers // 2), dtype="float32"
         )
         self.loss_tracker = keras.metrics.Mean(name="loss")
-        self.layers_list = [Coupling(6) for i in range(num_coupling_layers)]
+        self.layers_list = [Coupling(7) for i in range(num_coupling_layers)]
 
     @property
     def metrics(self):
@@ -173,13 +224,12 @@ class RealNVP(keras.Model):
     def log_loss(self, data):
         # Extract the actual data here as "x", and the final weight column as "w".
         x = data[:,0:-1]
-        w = data[:,-1]
         m = data[:,0]
         y, logdet = self(x)
         # Suppose the weight of the subhalo is "N". This means that this subhalo actually represents N such subhalos.
         # Treating these as independent contributions to the likelihood, we should multiply the probability, p, of this point
         # together N times, i.e. p^N. Since we compute a log-likelihood this corresponds to multiplying the likelihood by the weight.
-        log_likelihood = (self.distribution.log_prob(y) + logdet)*w
+        log_likelihood = self.distribution.log_prob(y) + logdet
         return -tf.reduce_mean(log_likelihood)
 
     def train_step(self, data):
@@ -206,55 +256,57 @@ history = model.fit(
     augmented_normalized_data, batch_size=256, epochs=200, verbose=2, validation_split=0.2
 )
 
-model.save_weights('../data/emulatorModel')
+model.save_weights('../data/emulatorModel' + dm_model)
 
 emulator = RealNVP(num_coupling_layers=12)
-emulator.load_weights('../data/emulatorModel')
+emulator.load_weights('../data/emulatorModel' + dm_model)
 
-# From data to latent space.
+# From Galacticus space to Gaussian space.
 z, _ = emulator(normalized_data)
 
-# From latent space to data.
-samples = emulator.distribution.sample(30000)
+# From Gaussian space to Galacticus space.
+num_subhalos = len(data[:,0])
+samples = emulator.distribution.sample(num_subhalos)
 x, _ = emulator.predict(samples)
 xt = norm_transform_inv(x, np.nanmin(x, axis = 0), np.nanmax(x, axis = 0), -1, 1)
-clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0)
+r_kpc = 1000 * 10**xt[:,4]
+clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,0] < 1e9) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= np.min(data[:, 1])) & (radiusVirialHost * 10**xt[:,-1] < 0.02)
+
+print('minimum Galacticus concentration: ', np.min(data[:,1]))
 
 # Generate a weighted subsample of the original data.
 w = weight[subhalos]
 i = np.arange(0, w.size, 1, dtype=int)
-subsample = np.random.choice(i, size=len(xt[clip]), replace=True, p=w/np.sum(w))
+subsample = np.random.choice(i, size= int(len(xt[clip])), replace=True, p=w/np.sum(w))
+#annulus = (radiusVirialHost * 10**data[subsample, -1] < 0.02)
 
 # Saving emulator data to a .txt file which includes the normalization radius and non-normalized masses
-np.savetxt('clipped_galacticus_data.txt', data[subsample])
-np.savetxt('clipped_emulator_data.txt', xt[clip])
-np.savetxt('galacticus_data.txt', data)
-np.savetxt('emulator_data.txt', xt)
-
-# create a mask that eliminates the tidal heating outlier data points from Galacticus
-tidal_clip = (data[subsample, 5] > -6)
+#np.savetxt('clipped_galacticus_data_' + dm_model + '.txt', data[subsample])
+#np.savetxt('clipped_emulator_data_' + dm_model + '.txt', xt[clip])
+np.savetxt('galacticus_data_' + dm_model + '.txt', data)
+np.savetxt('emulator_data_' + dm_model + '.txt', xt)
 
 # Compute and compare the ratio of low-to-high-mass subhalos in the original data and in the emulated data.
 # For the original data we weight by the subsampling weight. If this was included correctly in the training
 # then the emulated data should have effectively learned these weights and produce a ratio similar to that in
 # the original data.
-s6 = data[:,0] > -6.0
-s4 = data[:,0] > -4.0
-ratioOriginal = np.sum(data[s6,0]*w[s6])/np.sum(data[s4,0]*w[s4])
-print("Ratio of low-to-high-mass subhalos in original data (weighted): "+str(ratioOriginal))
+#s6 = data[:,0] > -6.0
+#s4 = data[:,0] > -4.0
+#ratioOriginal = np.sum(data[s6,0]*w[s6])/np.sum(data[s4,0]*w[s4])
+#print("Ratio of low-to-high-mass subhalos in original data (weighted): "+str(ratioOriginal))
 
-ratioEmulator = np.sum(xt[clip,0] > -6.0)/np.sum(xt[clip,0] > -4.0)
-print("Ratio of low-to-high-mass subhalos in emulated data: "+str(ratioEmulator))
+#ratioEmulator = np.sum(xt[clip,0] > -6.0)/np.sum(xt[clip,0] > -4.0)
+#print("Ratio of low-to-high-mass subhalos in emulated data: "+str(ratioEmulator))
 
-plt.figure(figsize=(15, 10))
-plt.plot(history.history["loss"])
-plt.plot(history.history["val_loss"])
-plt.title("model loss")
-plt.legend(["train", "validation"], loc="upper right")
-plt.ylabel("loss")
-plt.xlabel("epoch")
-plt.ylim(-1600,200)
-plt.savefig('plots/loss.png')
+#plt.figure(figsize=(15, 10))
+#plt.plot(history.history["loss"])
+#plt.plot(history.history["val_loss"])
+#plt.title("model loss")
+#plt.legend(["train", "validation"], loc="upper right")
+#plt.ylabel("loss")
+#plt.xlabel("epoch")
+#plt.ylim(-1600,200)
+#plt.savefig('plots/loss_' + dm_model + '.png')
 
 #f, axes = plt.subplots(5, 2)
 #f.set_size_inches(15, 18)
@@ -300,128 +352,110 @@ plt.savefig('plots/loss.png')
 #axes[4, 1].set_xlim([-6, 0])
 #axes[4, 1].set_ylim([-3.0, 5.0])
 
-def generateRealization(countSubhalosMean,emulator):
-    countSubhalosRealization = np.random.poisson(countSubhalosMean,1)[0]
-    samples = emulator.distribution.sample(2*countSubhalosRealization)
-    x, _ = emulator.predict(samples)
-    xt = norm_transform_inv(x, np.nanmin(x, axis = 0), np.nanmax(x, axis = 0), -1, 1)
-    clip = np.nonzero((xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0))
-#     clip = np.nonzero((xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,3] >= 0.0))
-    clipLimited = clip[0][0:countSubhalosRealization-1]
-    return xt[clipLimited,:]
-
-realization=generateRealization(countSubhalosMean,emulator)
-print("Number of subhalos in realization = "+str(realization.shape[0]))
-
 # Testing now to create Density plots
 from scipy.stats import gaussian_kde
 
-concentration_density_galacticus = np.vstack([data[subsample, 0][tidal_clip], data[subsample, 1][tidal_clip]])
+concentration_density_galacticus = np.vstack([data[:, 0][subsample], data[:,1][subsample]])
 z1_galacticus = gaussian_kde(concentration_density_galacticus)(concentration_density_galacticus)
-concentration_density_generated = np.vstack([xt[clip, 0][tidal_clip], xt[clip, 1][tidal_clip]])
+concentration_density_generated = np.vstack([xt[clip, 0], xt[clip, 1]])
 z1_generated = gaussian_kde(concentration_density_generated)(concentration_density_generated)
 
-mass_bound_density_galacticus = np.vstack([data[subsample, 0][tidal_clip], data[subsample, 2][tidal_clip]])
+mass_bound_density_galacticus = np.vstack([data[:, 0][subsample], data[:, 2][subsample]])
 z2_galacticus = gaussian_kde(mass_bound_density_galacticus)(mass_bound_density_galacticus)
-mass_bound_density_generated = np.vstack([xt[clip, 0][tidal_clip], xt[clip, 2][tidal_clip]])
+mass_bound_density_generated = np.vstack([xt[clip, 0], xt[clip, 2]])
 z2_generated = gaussian_kde(mass_bound_density_generated)(mass_bound_density_generated)
 
-mass_bound_density_galacticus = np.vstack([data[subsample, 0][tidal_clip], data[subsample, 2][tidal_clip]])
-z2_galacticus = gaussian_kde(mass_bound_density_galacticus)(mass_bound_density_galacticus)
-mass_bound_density_generated = np.vstack([xt[clip, 0][tidal_clip], xt[clip, 2][tidal_clip]])
-z2_generated = gaussian_kde(mass_bound_density_generated)(mass_bound_density_generated)
-
-redshift_infall_density_galacticus = np.vstack([data[subsample, 0][tidal_clip], data[subsample, 3][tidal_clip]])
+redshift_infall_density_galacticus = np.vstack([data[:, 0][subsample], data[:, 3][subsample]])
 z3_galacticus = gaussian_kde(redshift_infall_density_galacticus)(redshift_infall_density_galacticus)
-redshift_infall_density_generated = np.vstack([xt[clip, 0][tidal_clip], xt[clip, 3][tidal_clip]])
+redshift_infall_density_generated = np.vstack([xt[clip, 0], xt[clip, 3]])
 z3_generated = gaussian_kde(redshift_infall_density_generated)(redshift_infall_density_generated)
 
-orbital_radius_density_galacticus = np.vstack([data[subsample, 0][tidal_clip], data[subsample, 4][tidal_clip]])
+orbital_radius_density_galacticus = np.vstack([data[:, 0][subsample], data[:, 4][subsample]])
 z4_galacticus = gaussian_kde(orbital_radius_density_galacticus)(orbital_radius_density_galacticus)
-orbital_radius_density_generated = np.vstack([xt[clip, 0][tidal_clip], xt[clip, 4][tidal_clip]])
+orbital_radius_density_generated = np.vstack([xt[clip, 0], xt[clip, 4]])
 z4_generated = gaussian_kde(orbital_radius_density_generated)(orbital_radius_density_generated)
 
-tidal_heating_density_galacticus = np.vstack([data[subsample, 0][tidal_clip], data[subsample, 5][tidal_clip]])
-z5_galacticus = gaussian_kde(tidal_heating_density_galacticus)(tidal_heating_density_galacticus)
-tidal_heating_density_generated = np.vstack([xt[clip, 0][tidal_clip], xt[clip, 5][tidal_clip]])
-z5_generated = gaussian_kde(tidal_heating_density_generated)(tidal_heating_density_generated)
+truncation_radius_density_galacticus = np.vstack([data[:, 0][subsample], data[:, 5][subsample]])
+z5_galacticus = gaussian_kde(truncation_radius_density_galacticus)(truncation_radius_density_galacticus)
+truncation_radius_density_generated = np.vstack([xt[clip, 0], xt[clip, 5]])
+z5_generated = gaussian_kde(truncation_radius_density_generated)(truncation_radius_density_generated)
 
 f, axes = plt.subplots(5, 2)
 f.set_size_inches(15, 18)
 
-axes[0, 0].scatter(data[subsample, 0][tidal_clip], data[subsample, 1][tidal_clip], c = z1_galacticus, s=9)
-axes[0, 0].set(title="Galacticus", xlabel="Mass infall", ylabel="concentration")
-axes[0, 0].set_xlim([-6, 0])
-axes[0, 0].set_ylim([0, 23])
-axes[0, 1].scatter(xt[clip, 0][tidal_clip], xt[clip, 1][tidal_clip], c = z1_generated, s=9)
-axes[0, 1].set(title="Generated", xlabel="Mass infall", ylabel="concentration")
-axes[0, 1].set_xlim([-6, 0])
-axes[0, 1].set_ylim([0, 23])
-axes[1, 0].scatter(data[subsample, 0][tidal_clip], data[subsample, 2][tidal_clip], c = z2_galacticus, s=9)
-axes[1, 0].set(title="Galacticus", xlabel="Mass infall", ylabel="Mass bound")
-axes[1, 0].set_xlim([-6, 0])
-axes[1, 0].set_ylim([-5.0, 0.2])
-axes[1, 1].scatter(xt[clip, 0][tidal_clip], xt[clip, 2][tidal_clip], c = z2_generated, s=9)
-axes[1, 1].set(title="Generated", xlabel="Mass infall", ylabel="Mass bound")
-axes[1, 1].set_xlim([-6, 0])
-axes[1, 1].set_ylim([-5.0, 0.2])
-axes[2, 0].scatter(data[subsample, 0][tidal_clip], data[subsample, 3][tidal_clip], c = z3_galacticus, s=9)
-axes[2, 0].set(title="Galacticus", xlabel="Mass infall", ylabel="Redshift infall")
-axes[2, 0].set_xlim([-6, 0])
-axes[2, 0].set_ylim([-0.2, 6.0])
-axes[2, 1].scatter(xt[clip, 0][tidal_clip], xt[clip, 3][tidal_clip], c = z3_generated, s=9)
-axes[2, 1].set(title="Generated", xlabel="Mass infall", ylabel="Redshift infall")
-axes[2, 1].set_xlim([-6, 0])
-axes[2, 1].set_ylim([-0.2, 6.0])
-axes[3, 0].scatter(data[subsample, 0][tidal_clip], data[subsample, 4][tidal_clip], c = z4_galacticus, s=9)
-axes[3, 0].set(title="Galacticus", xlabel="Mass infall", ylabel="Orbital radius")
-axes[3, 0].set_xlim([-6, 0])
-axes[3, 0].set_ylim([-2.0, 1.0])
-axes[3, 1].scatter(xt[clip, 0][tidal_clip], xt[clip, 4][tidal_clip], c = z4_generated, s=9)
-axes[3, 1].set(title="Generated", xlabel="Mass infall", ylabel="Orbital radius")
-axes[3, 1].set_xlim([-6, 0])
-axes[3, 1].set_ylim([-2.0, 1.0])
-axes[4, 0].scatter(data[subsample, 0][tidal_clip], data[subsample, 5][tidal_clip], c = z5_galacticus, s=9)
-axes[4, 0].set(title="Galacticus", xlabel="Mass infall", ylabel="Tidal heating")
-axes[4, 0].set_xlim([-6, 0])
-axes[4, 0].set_ylim([-3.0, 5.0])
-axes[4, 1].scatter(xt[clip, 0][tidal_clip], xt[clip, 5][tidal_clip], c = z5_generated, s=9)
-axes[4, 1].set(title="Generated", xlabel="Mass infall", ylabel="Tidal heating")
-axes[4, 1].set_xlim([-6, 0])
-axes[4, 1].set_ylim([-3.0, 5.0])
-plt.savefig('plots/density.png')
+axes[0, 0].scatter(data[:, 0][subsample], data[:, 1][subsample], c = z1_galacticus, s=9)
+axes[0, 0].set(title="Galacticus", xlabel="mass infall", ylabel="concentration")
+#axes[0, 0].set_xlim([-6, 0])
+#axes[0, 0].set_ylim([0, 23])
+axes[0, 1].scatter(xt[clip, 0], xt[clip, 1], c = z1_generated, s=9)
+axes[0, 1].set(title="Generated", xlabel="mass infall", ylabel="concentration")
+#axes[0, 1].set_xlim([-6, 0])
+#axes[0, 1].set_ylim([0, 23])
+axes[1, 0].scatter(data[:, 0][subsample], data[:, 2][subsample], c = z2_galacticus, s=9)
+axes[1, 0].set(title="Galacticus", xlabel="mass infall", ylabel="mass bound")
+#axes[1, 0].set_xlim([-6, 0])
+#axes[1, 0].set_ylim([-5.0, 0.2])
+axes[1, 1].scatter(xt[clip, 0], xt[clip, 2], c = z2_generated, s=9)
+axes[1, 1].set(title="Generated", xlabel="mass infall", ylabel="mass bound")
+#axes[1, 1].set_xlim([-6, 0])
+#axes[1, 1].set_ylim([-5.0, 0.2])
+axes[2, 0].scatter(data[:, 0][subsample], data[:, 3][subsample], c = z3_galacticus, s=9)
+axes[2, 0].set(title="Galacticus", xlabel="mass infall", ylabel="redshift infall")
+#axes[2, 0].set_xlim([-6, 0])
+#axes[2, 0].set_ylim([-0.2, 6.0])
+axes[2, 1].scatter(xt[clip, 0], xt[clip, 3], c = z3_generated, s=9)
+axes[2, 1].set(title="Generated", xlabel="mass infall", ylabel="redshift infall")
+#axes[2, 1].set_xlim([-6, 0])
+#axes[2, 1].set_ylim([-0.2, 6.0])
+axes[3, 0].scatter(data[:, 0][subsample], data[:, 4][subsample], c = z4_galacticus, s=9)
+axes[3, 0].set(title="Galacticus", xlabel="mass infall", ylabel="orbital radius")
+#axes[3, 0].set_xlim([-6, 0])
+#axes[3, 0].set_ylim([-2.0, 1.0])
+axes[3, 1].scatter(xt[clip, 0], xt[clip, 4], c = z4_generated, s=9)
+axes[3, 1].set(title="Generated", xlabel= "mass infall", ylabel="orbital radius")
+axes[4, 0].scatter(data[:, 0][subsample], data[:, 5][subsample], c = z5_galacticus, s=9)
+axes[4, 0].set(title="Galacticus", xlabel="mass infall", ylabel="truncation radius")
+#axes[4, 0].set_xlim([-6, 0])
+axes[4, 0].set_ylim([-4.0, 0])
+axes[4, 1].scatter(xt[clip, 0], xt[clip, 5], c = z5_generated, s=9)
+axes[4, 1].set(title="Generated", xlabel="mass infall", ylabel="truncation radius")
+#axes[4, 1].set_xlim([-6, 0])
+axes[4, 1].set_ylim([-4.0, 0])
+plt.savefig('plots/density_' + dm_model + '.png')
 
-f, axes = plt.subplots(5)
+for i in range(len(xt[clip, 1])):
+    if xt[clip, 1][i] > 100:
+        print('subhalo ' + str(i) + ' has concentration: ', xt[clip, 1][i])
+
+f, axes = plt.subplots(6)
 f.set_size_inches(15, 20)
 
-axes[0].hist(data[subsample, 1][tidal_clip], bins = 70, range = (0,30), label = 'Galacticus', fill = False, edgecolor = 'blue')
-axes[0].hist(xt[clip, 1][tidal_clip], bins = 70, range = (0,30), label = 'Generated', fill = False, edgecolor = 'orange')
-axes[0].set(xlim = 0, ylim = 30, title = 'Concentration')
+axes[0].hist(data[:, 0][subsample], bins = 70, range = (-5, 0), label = 'Galacticus', fill = True, edgecolor = 'blue')
+axes[0].hist(xt[clip, 0], bins = 70, range = (-5, 0), label = 'Generated', fill = False, edgecolor = 'orange')
+axes[0].set(title = 'Infall Mass')
 axes[0].legend()
-axes[1].hist(data[subsample, 2][tidal_clip], bins = 70, range = (-2.5, 0), label = 'Galacticus', fill = False, edgecolor = 'blue')
+axes[1].hist(data[:, 1][subsample], bins = 70, range = (0, 30), label = 'Galacticus', fill = True, edgecolor = 'blue')
 # axes[1].hist(data[subsample, 2][tidal_clip], bins = 33, label = 'Galacticus', fill = False, edgecolor = 'blue')
-axes[1].hist(xt[clip, 2][tidal_clip], bins = 70, range = (-2.5, 0), label = 'Generated', fill = False, edgecolor = 'orange')
-axes[1].set(title = 'Mass Bound')
+axes[1].hist(xt[clip, 1], bins = 70, range = (0, 30), label = 'Generated', fill = False, edgecolor = 'orange')
+axes[1].set(title = 'Concentration')
 axes[1].legend()
-axes[2].hist(data[subsample, 3][tidal_clip], bins = 70, range = (0, 8), label = 'Galacticus', fill = False, edgecolor = 'blue')
-axes[2].hist(xt[clip, 3][tidal_clip], bins = 70, range = (0, 8), label = 'Generated', fill = False, edgecolor = 'orange')
-axes[2].set(title = 'Redshift Infall')
+axes[2].hist(data[:, 2][subsample], bins = 70, range = (-4, 0), label = 'Galacticus', fill = True, edgecolor = 'blue')
+axes[2].hist(xt[clip, 2], bins = 70, range = (-4, 0), label = 'Generated', fill = False, edgecolor = 'orange')
+axes[2].set(title = 'Bound Mass')
 axes[2].legend()
-axes[3].hist(data[subsample, 4][tidal_clip], bins = 70, range = (-1.5, 1.5), label = 'Galacticus', fill = False, edgecolor = 'blue')
-axes[3].hist(xt[clip, 4][tidal_clip], bins = 70, range = (-1.5, 1.5), label = 'Generated', fill = False, edgecolor = 'orange')
-axes[3].set(title = 'Orbital Radius')
+axes[3].hist(data[:, 3][subsample], bins = 70, range = (0, 10), label = 'Galacticus', fill = True, edgecolor = 'blue')
+axes[3].hist(xt[clip, 3], bins = 70, range = (0, 10), label = 'Generated', fill = False, edgecolor = 'orange')
+axes[3].set(title = 'Infall Redshift')
 axes[3].legend()
-axes[4].hist(data[subsample, 5][tidal_clip], bins = 70, range = (-4, 4), label = 'Galacticus', fill = False, edgecolor = 'blue')
-axes[4].hist(xt[clip, 5][tidal_clip], bins = 70, range = (-4, 4), label = 'Generated', fill = False, edgecolor = 'orange')
-axes[4].set(title = 'Tidal Heating')
+axes[4].hist(data[:, 4][subsample], bins = 70, range = (-2, 2), label = 'Galacticus', fill = True, edgecolor = 'blue')
+axes[4].hist(xt[clip, 4], bins = 70, range = (-2, 2), label = 'Generated', fill = False, edgecolor = 'orange')
+axes[4].set(title = 'Orbital radius')
 axes[4].legend()
-plt.savefig('plots/histograms.png')
-
-#print(stats.ks_2samp(data[subsample, 1][tidal_clip], xt[clip, 1][tidal_clip]))
-#print(stats.ks_2samp(data[subsample, 2][tidal_clip], xt[clip, 2][tidal_clip]))
-#print(stats.ks_2samp(data[subsample, 3][tidal_clip], xt[clip, 3][tidal_clip]))
-#print(stats.ks_2samp(data[subsample, 4][tidal_clip], xt[clip, 4][tidal_clip]))
-#print(stats.ks_2samp(data[subsample, 5][tidal_clip], xt[clip, 5][tidal_clip]))
+axes[5].hist(data[:, 5][subsample], bins = 70, range = (-4, 0), label = 'Galacticus', fill = True, edgecolor = 'blue')
+axes[5].hist(xt[clip, 5], bins = 70, range = (-4, 0), label = 'Generated', fill = False, edgecolor = 'orange')
+axes[5].set(title = 'Truncation radius')
+axes[5].legend()
+plt.savefig('plots/histograms_' + dm_model + '.png')
 
 # Defining a weighted 2 sample KS test
 def ks_w2(data1, data2, wei1, wei2):
@@ -438,11 +472,11 @@ def ks_w2(data1, data2, wei1, wei2):
     cdf2we = cwei2[[np.searchsorted(data2, data, side='right')]]
     return np.max(np.abs(cdf1we - cdf2we))
 
-print('concentration p-value: ' + str(ks_w2(data[:,1], xt[clip, 1][tidal_clip], w,np.ones(len(w[subsample][tidal_clip])))))
-print('mass bound p-value: ' + str(ks_w2(data[:,2], xt[clip, 2][tidal_clip], w,np.ones(len(w[subsample][tidal_clip])))))
-print('redshift infall p-value: ' + str(ks_w2(data[:,3], xt[clip, 3][tidal_clip], w, np.ones(len(w[subsample][tidal_clip])))))
-print('orbital radius p-value: ' + str(ks_w2(data[:,4], xt[clip, 4][tidal_clip], w, np.ones(len(w[subsample][tidal_clip])))))
-print('tidal heating p-value: ' + str(ks_w2(data[:,5], xt[clip, 5][tidal_clip], w, np.ones(len(w[subsample][tidal_clip])))))
+#print('concentration p-value: ' + str(ks_w2(data[:,1], xt[clip, 1], w,np.ones(len(w[subsample])))))
+#print('mass bound p-value: ' + str(ks_w2(data[:,2], xt[clip, 2], w,np.ones(len(w[subsample])))))
+#print('redshift infall p-value: ' + str(ks_w2(data[:,3], xt[clip, 3], w, np.ones(len(w[subsample])))))
+#print('orbital radius p-value: ' + str(ks_w2(data[:,4], xt[clip, 4], w, np.ones(len(w[subsample])))))
+#print('truncation radius p-value: ' + str(ks_w2(data[:,5], xt[clip, 5], w, np.ones(len(w[subsample])))))
 
 # Creating an example Negative Binomial distribution plot
 N = countSubhalosMean
@@ -452,3 +486,8 @@ r = 1/s_I**2
 x = np.arange(stats.nbinom.ppf(0.01, r, p),stats.nbinom.ppf(0.99, r, p))
 plt.plot(x, stats.nbinom.pmf(x, r, p), 'ko', ms=1, label='nbinom pmf')
 plt.savefig('plots/negative_binomial.png')
+
+ts = time.time()
+time_format = time.strftime("%H:%M:%S", time.gmtime(ts))
+print('Code executed! Ending time: ' + str(time_format))
+print(' ')
