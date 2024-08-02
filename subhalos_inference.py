@@ -194,17 +194,14 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
 
     data = np.array([])
 
+    min_concentration =  3.4845380492242852 # minimum concentration value from Galacticus data
     while n < num_iterations:
-        N = np.random.choice(z, p = prob)
-        #N = 400
+        #N = np.random.choice(z, p = prob)
+        N = 391
         samples = emulator.distribution.sample(sample_amount*N)
         x, _ = emulator.predict(samples, batch_size=65336)
         xt = norm_transform_inv(x, data_min, data_max, -1, 1)
-        clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= 4)# & (radiusVirialHost * 10**xt[:,-1] < 0.02)
-
-        annulus = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= 4) & (radiusVirialHost * 10**xt[:,-1] < 0.02)
-
-        print('number of subhalos within the annulus: ', len(xt[annulus]))
+        clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,0] < 1e9) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= min_concentration) & (radiusVirialHost * 10**xt[:,-1] < 0.02)
 
         #if len(xt[clip]) > N:
         if len(data) > N:
@@ -212,9 +209,6 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
             data = data[:int(N)]
         #elif len(xt[clip]) < N:
         elif len(data) < N:
-            #print('number of total data points: ', len(data))
-            #print('Not enough data points are being sampled in iteration ' + str(i))
-            #print('number of data points to append in iteration ' + str(i) + ':', len(xt[clip]))
             sample_amount += 0.5
             i += 1
 
@@ -256,11 +250,14 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
         reg_y.append(y)
         n += 1
 
+    annulus = (r2d_Mpc < 0.02)
+    print('number of subhalos within annulus: ', len(data[annulus]))
+
     return reg_massInfall, reg_concentration, reg_massBound, reg_redshift, reg_orbitalRadius, reg_truncationRadius, np.array(reg_x), np.array(reg_y)
 
 #test = emulator_data()
 #f = h5py.File('em_y_data.hdf5', 'w')
-#f.create_dataset('y', data = test[7])
+#f.create_dataset('r2d', data = test[-1])
 #f.close()
 #jkl
 
@@ -268,6 +265,7 @@ num_iterations = 1
 
 # Constructing initialized parameters
 output_path = os.getcwd() + '/emulator_inference_output_' + dm_model + '/' #CHANGE THIS WHEN WORKING ON STANDARD OR EMULATOR
+#output_path = os.getcwd() + '/em_test/'
 job_index = sys.argv[2]
 #job_index = 1
 n_keep = 100
@@ -285,8 +283,8 @@ realization_priors['log_m_host'] = ['FIXED', 13.3]
 realization_priors['cone_opening_angle_arcsec'] = ['FIXED', 8.0]
 
 # Testing out things that are in the "example_summary_statistic_distribution.py" script
-#realization_priors['sigma_sub'] = ['FIXED', 3/5 * 0.357]
-realization_priors['sigma_sub'] = ['FIXED', 0.006] # From the PonosV simulations
+realization_priors['sigma_sub'] = ['FIXED', 3/5 * 0.357]
+#realization_priors['sigma_sub'] = ['FIXED', 0.006] # From the PonosV simulations
 realization_priors['log_mlow'] = ['FIXED', 8.0]
 realization_priors['log_mhigh'] = ['FIXED', 10.0]
 #realization_priors['shmf_log_slope'] = ['FIXED', -1.96]
@@ -294,14 +292,34 @@ realization_priors['log_mhigh'] = ['FIXED', 10.0]
 # WDM Specific parameters (keep commented out when working with CDM)
 #realization_priors['log_mc'] = ['UNIFORM', 4.8, 10.0]
 
+f = h5py.File('bad_subhalo_data.hdf5', 'r')
+m_infall = f['m_infall'][:]
+c = f['c'][:]
+m_bound = f['m_bound'][:]
+z_infall = f['z_infall'][:]
+r3d = f['r3d'][:]
+rt = f['rt'][:]
+x = f['x'][:]
+y = f['y'][:]
+f.close()
+
+emulator_array = [[m_infall], [c], [m_bound], [z_infall], [r3d], [rt], [x], [y]]
+
 # parameter for emulator data (keep commented out when not working with emulator)
 realization_priors['emulator_input'] = ['FIXED', emulator_data]
+#realization_priors['emulator_input'] = ['FIXED', emulator_array]
 
 macromodel_priors = {}
 macromodel_priors['m4_amplitude_prior'] = [np.random.normal, 0.0, 0.01]
+#macromodel_priors['m4_amplitude_prior'] = ['FIXED', -0.01283348384432044]
+
 macromodel_priors['gamma_macro_prior'] = [np.random.uniform, 1.8, 2.3]
+#macromodel_priors['gamma_macro_prior'] = ['FIXED', 2.170962864395913]
+
+
 # FOR A CUSTOM SHEAR PRIOR:
 macromodel_priors['shear_strength_prior'] = [np.random.uniform, 0.05, 0.25]
+#macromodel_priors['shear_strength_prior'] = ['FIXED', 0.2677285318751138]
 
 # the present lenses also have built-in shear priors determined based on what values get accepted after running ABC;
 # using a broader prior, you will waste some time exploring parameter space that will get rejected
