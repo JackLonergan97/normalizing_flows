@@ -97,7 +97,7 @@
   
   <!-- Merger tree building options --> 
   <mergerTreeConstructor value="build"    >
-    <redshiftBase value="0.0"/>
+    <redshiftBase value="0.34"/>
   </mergerTreeConstructor>
   <mergerTreeBuilder     value="cole2000" >
     <accretionLimit   value="  0.1"/>
@@ -111,8 +111,8 @@
     <accuracyFirstOrder value="+0.10"/>
   </mergerTreeBranchingProbability>
   <mergerTreeBuildMasses value="fixedMass">
-    <massTree  value="1.0e13"/>
-    <treeCount value="10"   />
+    <massTree  value="1.995e13"/>
+    <treeCount value="1000"   />
   </mergerTreeBuildMasses>
 
   <!--
@@ -141,30 +141,11 @@
   <darkMatterProfileScaleRadius value="concentrationLimiter">
     <concentrationMinimum value="  4.0"/>
     <concentrationMaximum value="100.0"/>
-    <darkMatterProfileScaleRadius value="johnson2021">
-      <!-- Scale radii are computed using the energy random walk model of Johnson, Benson, & Grin (2021; ApJ; 908; 33; http://adsabs.harvard.edu/abs/2021ApJ...908...33J). -->
-      <!-- Best fit value from Johnson, Benson, & Grin (2020) -->
-      <energyBoost      value="0.6773"/>
-      <massExponent     value="1.5552"/>
-      <unresolvedEnergy value="0.5500"/> 
-      <darkMatterProfileScaleRadius value="ludlow2016"          >
-	<C                                  value="700.27000"    /> <!-- Best fit values from Johnson, Benson, & Grin (2020). -->
-	<f                                  value="  0.07534"    />
-	<timeFormationSeekDelta             value="  0.00000"    />
-	<darkMatterProfileScaleRadius value="concentration" >
-	  <correctForConcentrationDefinition    value="true"              />
-	  <darkMatterProfileConcentration value="diemerKravtsov2014" >
-	    <alpha   value="1.12"/>
-	    <beta    value="1.69"/>
-	    <eta0    value="6.82"/>
-	    <eta1    value="1.42"/>
-	    <kappa   value="0.69"/>
-	    <phi0    value="6.58"/>
-	    <phi1    value="1.37"/>
-	    <scatter value="0.00"/>
-	  </darkMatterProfileConcentration>
-	</darkMatterProfileScaleRadius>
-      </darkMatterProfileScaleRadius>
+    <darkMatterProfileScaleRadius value="concentration" >
+      <correctForConcentrationDefinition value="true"/>
+      <darkMatterProfileConcentration value="diemerJoyce2019" >
+        <scatter value="0.1"/>
+      </darkMatterProfileConcentration>
     </darkMatterProfileScaleRadius>
   </darkMatterProfileScaleRadius>
 
@@ -278,15 +259,20 @@
   </mergerTreeEvolveTimestep>
 
   <!-- Output options -->
-  <outputFileName value="darkMatterOnlySubHalosCDM_res6.hdf5"/>
+  <outputFileName value="darkMatterOnlySubHalosCDM_res6_annulus.hdf5"/>
   <mergerTreeOutputter value="multi">
     <mergerTreeOutputter value="standard">
       <outputReferences value="false"/>
+      <galacticFilter value="intervalPass">
+        <nodePropertyExtractor value="radiusOrbitalProjected"/>
+        <thresholdLow value="0.0"/>
+        <thresholdHigh value="20.0e-3"/>
+      </galacticFilter>
     </mergerTreeOutputter>
     <mergerTreeOutputter value="analyzer"/>
   </mergerTreeOutputter>
   <outputTimes value="list">
-    <redshifts value="0.0"/>
+    <redshifts value="0.34"/>
   </outputTimes>
   <nodePropertyExtractor value="multi">
     <nodePropertyExtractor value="nodeIndices"          />
