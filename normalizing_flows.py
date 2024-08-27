@@ -187,7 +187,7 @@ class RealNVP(keras.Model):
             [[1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1]] * (num_coupling_layers // 2), dtype="float32"
         )
         self.loss_tracker = keras.metrics.Mean(name="loss")
-        self.layers_list = [Coupling(7) for i in range(num_coupling_layers)]
+        self.layers_list = [Coupling((7)) for i in range(num_coupling_layers)]
 
     @property
     def metrics(self):
@@ -252,11 +252,11 @@ model = RealNVP(num_coupling_layers=12)
 
 model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0001))
 
-history = model.fit(
-    augmented_normalized_data, batch_size=256, epochs=200, verbose=2, validation_split=0.2
-)
+#history = model.fit(
+#    augmented_normalized_data, batch_size=256, epochs=200, verbose=2, validation_split=0.2
+#)
 
-model.save_weights('../data/emulatorModel' + dm_model)
+#model.save_weights('../data/emulatorModel' + dm_model)
 
 emulator = RealNVP(num_coupling_layers=12)
 emulator.load_weights('../data/emulatorModel' + dm_model)
@@ -270,9 +270,14 @@ samples = emulator.distribution.sample(num_subhalos)
 x, _ = emulator.predict(samples)
 xt = norm_transform_inv(x, np.nanmin(x, axis = 0), np.nanmax(x, axis = 0), -1, 1)
 r_kpc = 1000 * 10**xt[:,4]
-clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,0] < 1e9) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= np.min(data[:, 1])) & (radiusVirialHost * 10**xt[:,-1] < 0.02)
+clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,0] < np.log10(1e9/massHost)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= np.min(data[:, 1]))
 
+print('xt[:,0]: ', xt[:,0])
+print('type(xt[:,0]): ', type(xt[:,0]))
+print('xt[:,0][0]: ', xt[:,0][0])
+print('type(xt[:,0][0]): ', type(xt[:,0][0]))
 print('minimum Galacticus concentration: ', np.min(data[:,1]))
+jkl
 
 # Generate a weighted subsample of the original data.
 w = weight[subhalos]
@@ -385,41 +390,43 @@ f.set_size_inches(15, 18)
 
 axes[0, 0].scatter(data[:, 0][subsample], data[:, 1][subsample], c = z1_galacticus, s=9)
 axes[0, 0].set(title="Galacticus", xlabel="mass infall", ylabel="concentration")
-#axes[0, 0].set_xlim([-6, 0])
-#axes[0, 0].set_ylim([0, 23])
+axes[0, 0].set_xlim([-5, 0])
+axes[0, 0].set_ylim([0, 20])
 axes[0, 1].scatter(xt[clip, 0], xt[clip, 1], c = z1_generated, s=9)
 axes[0, 1].set(title="Generated", xlabel="mass infall", ylabel="concentration")
-#axes[0, 1].set_xlim([-6, 0])
-#axes[0, 1].set_ylim([0, 23])
+axes[0, 1].set_xlim([-5, 0])
+axes[0, 1].set_ylim([0, 20])
 axes[1, 0].scatter(data[:, 0][subsample], data[:, 2][subsample], c = z2_galacticus, s=9)
 axes[1, 0].set(title="Galacticus", xlabel="mass infall", ylabel="mass bound")
-#axes[1, 0].set_xlim([-6, 0])
-#axes[1, 0].set_ylim([-5.0, 0.2])
+axes[1, 0].set_xlim([-5, 0])
+axes[1, 0].set_ylim([-5.0, 0.2])
 axes[1, 1].scatter(xt[clip, 0], xt[clip, 2], c = z2_generated, s=9)
 axes[1, 1].set(title="Generated", xlabel="mass infall", ylabel="mass bound")
-#axes[1, 1].set_xlim([-6, 0])
-#axes[1, 1].set_ylim([-5.0, 0.2])
+axes[1, 1].set_xlim([-5, 0])
+axes[1, 1].set_ylim([-5.0, 0.2])
 axes[2, 0].scatter(data[:, 0][subsample], data[:, 3][subsample], c = z3_galacticus, s=9)
 axes[2, 0].set(title="Galacticus", xlabel="mass infall", ylabel="redshift infall")
-#axes[2, 0].set_xlim([-6, 0])
-#axes[2, 0].set_ylim([-0.2, 6.0])
+axes[2, 0].set_xlim([-5, 0])
+axes[2, 0].set_ylim([-0.2, 10.0])
 axes[2, 1].scatter(xt[clip, 0], xt[clip, 3], c = z3_generated, s=9)
 axes[2, 1].set(title="Generated", xlabel="mass infall", ylabel="redshift infall")
-#axes[2, 1].set_xlim([-6, 0])
-#axes[2, 1].set_ylim([-0.2, 6.0])
+axes[2, 1].set_xlim([-5, 0])
+axes[2, 1].set_ylim([-0.2, 10.0])
 axes[3, 0].scatter(data[:, 0][subsample], data[:, 4][subsample], c = z4_galacticus, s=9)
 axes[3, 0].set(title="Galacticus", xlabel="mass infall", ylabel="orbital radius")
-#axes[3, 0].set_xlim([-6, 0])
-#axes[3, 0].set_ylim([-2.0, 1.0])
+axes[3, 0].set_xlim([-5, 0])
+axes[3, 0].set_ylim([-2.0, 0.5])
 axes[3, 1].scatter(xt[clip, 0], xt[clip, 4], c = z4_generated, s=9)
 axes[3, 1].set(title="Generated", xlabel= "mass infall", ylabel="orbital radius")
+axes[3, 1].set_xlim([-5, 0])
+axes[3, 1].set_ylim([-2.0, 0.5])
 axes[4, 0].scatter(data[:, 0][subsample], data[:, 5][subsample], c = z5_galacticus, s=9)
 axes[4, 0].set(title="Galacticus", xlabel="mass infall", ylabel="truncation radius")
-#axes[4, 0].set_xlim([-6, 0])
+axes[4, 0].set_xlim([-5, 0])
 axes[4, 0].set_ylim([-4.0, 0])
 axes[4, 1].scatter(xt[clip, 0], xt[clip, 5], c = z5_generated, s=9)
 axes[4, 1].set(title="Generated", xlabel="mass infall", ylabel="truncation radius")
-#axes[4, 1].set_xlim([-6, 0])
+axes[4, 1].set_xlim([-5, 0])
 axes[4, 1].set_ylim([-4.0, 0])
 plt.savefig('plots/density_' + dm_model + '.png')
 

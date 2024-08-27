@@ -5,7 +5,7 @@ from tensorflow.keras import regularizers
 import numpy as np
 import tensorflow_probability as tfp
 import h5py
-from quadmodel.inference.forward_model import forward_model
+from samana.forward_model import forward_model
 import os
 import sys
 import matplotlib.pyplot as plt
@@ -17,7 +17,6 @@ import warnings
 warnings.filterwarnings('ignore')
 
 dm_model = sys.argv[1]
-#dm_model = 'CDM'
 
 # Reading in the data and converting it from a string to a list of lists and floats.
 necessary_data = open("necessary_data_" + dm_model + ".txt", "r")
@@ -187,55 +186,81 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
     reg_x = []
     reg_y = []
     reg_truncationRadius = []
-    sample_amount = 1.5
+    sample_amount = 1
     z = np.arange(stats.nbinom.ppf(0, r, p),stats.nbinom.ppf(0.9999999999999999, r, p))
     prob = stats.nbinom.pmf(z,r,p)
     prob = np.nan_to_num(prob)
-
+    N = np.random.choice(z, p = prob)
     data = np.array([])
 
     min_concentration =  3.4845380492242852 # minimum concentration value from Galacticus data
     while n < num_iterations:
-        #N = np.random.choice(z, p = prob)
-        N = 391
         samples = emulator.distribution.sample(sample_amount*N)
         x, _ = emulator.predict(samples, batch_size=65336)
         xt = norm_transform_inv(x, data_min, data_max, -1, 1)
-        clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,0] < 1e9) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= min_concentration) & (radiusVirialHost * 10**xt[:,-1] < 0.02)
+        clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,0] < np.log10(1e9/massHost)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= min_concentration)
 
-        #if len(xt[clip]) > N:
+        print('N: ', N)
+        print('np.shape(data) before if/else statements: ', np.shape(data))
+        print('len(data) before if/else statements: ', len(data))
+        print('data.ndim before if/else statements: ', data.ndim)
+        print('np.shape(xt): ', np.shape(xt))
+        print('np.shape(xt[clip]): ', np.shape(xt[clip]))
+        print('xt[clip].ndim: ', xt[clip].ndim)
+        print('starting if/else statements')
+        print('')
+
         if len(data) > N:
-            #data = xt[clip][:int(N)]
             data = data[:int(N)]
-        #elif len(xt[clip]) < N:
         elif len(data) < N:
-            sample_amount += 0.5
+            sample_amount += 1
             i += 1
 
             for j in range(len(xt[clip])):
                 if len(data) == 0:
-                    data = xt[clip][0]
+                    data = np.array([xt[clip][0]])
                 else:
                     data = np.vstack((data, xt[clip][j]))
+            print('np.shape(data) after iteration ' + str(i) + ':', np.shape(data))
+            print('starting new iteration')
+            print('')
             continue
         else:
-            #data = xt[clip]
-            data = data
+            pass
+        print('finished with if/else statements')
+        print('data after if/else statements: ', data)
+        print('np.shape(data): ', np.shape(data))
+        print('')
+        if isinstance(data[0], float):
+            print('sampled N.B. value: ', N)
+            print('exception data: ', data)
+            print('shape of exception data: ', np.shape(data))
+            print('')
+            reg_massInfall.append(massHost * (10**data[0]))
+            reg_massBound = [np.array(reg_massInfall[0] * 10**data[2])]
+            reg_concentration.append(data[1])
+            reg_redshift.append(data[3])
+            reg_orbitalRadius.append(radiusVirialHost * (10**data[4]))
+            reg_truncationRadius.append(radiusVirialHost * (10**data[5]))
+            reg_projectedRadius.append(radiusVirialHost * (10**data[-1]))
+            r2d_Mpc = radiusVirialHost * (10**data[-1])
+            x = [0]*len(data)
+            y = [0]*len(data)
+        else:
+            reg_massInfall.append(massHost * (10**data[:,0]))
 
-        reg_massInfall.append(massHost * (10**data[:,0]))
+            for i in range(len(data)): # We're doing this because the ith bound mass depends on the ith infall mass, whereas every other quantity depends on a  single scalar
+                reg_massBound.append(reg_massInfall[0][i] * (10**data[i][2]))
+            reg_massBound = [np.array(reg_massBound)]
 
-        for i in range(len(data)): # We're doing this because the ith bound mass depends on the ith infall mass, whereas every other quantity depends on a  single scalar
-            reg_massBound.append(reg_massInfall[0][i] * (10**data[i][2]))
-        reg_massBound = [np.array(reg_massBound)]
-
-        reg_concentration.append(data[:,1])
-        reg_redshift.append(data[:,3])
-        reg_orbitalRadius.append(radiusVirialHost * (10**data[:,4]))
-        reg_truncationRadius.append(radiusVirialHost * (10**data[:,5]))
-        reg_projectedRadius.append(radiusVirialHost * (10**data[:,-1]))
-        r2d_Mpc = radiusVirialHost * (10**data[:,-1])
-        x = [0]*len(data)
-        y = [0]*len(data)
+            reg_concentration.append(data[:,1])
+            reg_redshift.append(data[:,3])
+            reg_orbitalRadius.append(radiusVirialHost * (10**data[:,4]))
+            reg_truncationRadius.append(radiusVirialHost * (10**data[:,5]))
+            reg_projectedRadius.append(radiusVirialHost * (10**data[:,-1]))
+            r2d_Mpc = radiusVirialHost * (10**data[:,-1])
+            x = [0]*len(data)
+            y = [0]*len(data)
 
         for i in range(len(data)):
             r1 = random.uniform(0, 1)
@@ -249,9 +274,6 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
         reg_x.append(x)
         reg_y.append(y)
         n += 1
-
-    annulus = (r2d_Mpc < 0.02)
-    print('number of subhalos within annulus: ', len(data[annulus]))
 
     return reg_massInfall, reg_concentration, reg_massBound, reg_redshift, reg_orbitalRadius, reg_truncationRadius, np.array(reg_x), np.array(reg_y)
 
@@ -269,67 +291,42 @@ output_path = os.getcwd() + '/emulator_inference_output_' + dm_model + '/' #CHAN
 job_index = sys.argv[2]
 #job_index = 1
 n_keep = 100
-#n_keep = 1
+#n_keep = 2
 summary_statistic_tolerance = 1e5
-lens_data = 'B1422'
-from quadmodel.data.b1422 import B1422
-lens_data = B1422()
-print(lens_data.m)
 
-realization_priors = {}
-realization_priors['PRESET_MODEL'] = 'DMEmulator'
-realization_priors['LOS_normalization'] = ['FIXED', 0.]
-realization_priors['log_m_host'] = ['FIXED', 13.3]
-realization_priors['cone_opening_angle_arcsec'] = ['FIXED', 8.0]
+from samana.Data.b1422 import B1422_HST
+from samana.Model.b1422_model import B1422ModelEPLM3M4Shear
+data_class = B1422_HST()
+model = B1422ModelEPLM3M4Shear
+preset_model_name = 'WDMEmulator'
 
-# Testing out things that are in the "example_summary_statistic_distribution.py" script
-realization_priors['sigma_sub'] = ['FIXED', 3/5 * 0.357]
-#realization_priors['sigma_sub'] = ['FIXED', 0.006] # From the PonosV simulations
-realization_priors['log_mlow'] = ['FIXED', 8.0]
-realization_priors['log_mhigh'] = ['FIXED', 10.0]
-#realization_priors['shmf_log_slope'] = ['FIXED', -1.96]
+kwargs_sample_realization = {}
+kwargs_sample_realization['LOS_normalization'] = ['FIXED', 0.]
+kwargs_sample_realization['log_m_host'] = ['FIXED', 13.3]
+kwargs_sample_realization['cone_opening_angle_arcsec'] = ['FIXED', 8.0]
+#kwargs_sample_realization['sigma_sub'] = ['FIXED', 3/5 * 0.357]
+kwargs_sample_realization['sigma_sub'] = ['FIXED', 0.006]
+kwargs_sample_realization['log_mlow'] = ['FIXED', 8.0]
+kwargs_sample_realization['log_mhigh'] = ['FIXED', 9.0]
 
-# WDM Specific parameters (keep commented out when working with CDM)
-#realization_priors['log_mc'] = ['UNIFORM', 4.8, 10.0]
-
-f = h5py.File('bad_subhalo_data.hdf5', 'r')
-m_infall = f['m_infall'][:]
-c = f['c'][:]
-m_bound = f['m_bound'][:]
-z_infall = f['z_infall'][:]
-r3d = f['r3d'][:]
-rt = f['rt'][:]
-x = f['x'][:]
-y = f['y'][:]
-f.close()
-
-emulator_array = [[m_infall], [c], [m_bound], [z_infall], [r3d], [rt], [x], [y]]
+# WDM specific parameter
+kwargs_sample_realization['log_mc'] = ['UNIFORM', 4.8, 10.0] 
 
 # parameter for emulator data (keep commented out when not working with emulator)
-realization_priors['emulator_input'] = ['FIXED', emulator_data]
-#realization_priors['emulator_input'] = ['FIXED', emulator_array]
+kwargs_sample_realization['emulator_input'] = ['FIXED', emulator_data]
 
-macromodel_priors = {}
-macromodel_priors['m4_amplitude_prior'] = [np.random.normal, 0.0, 0.01]
-#macromodel_priors['m4_amplitude_prior'] = ['FIXED', -0.01283348384432044]
-
-macromodel_priors['gamma_macro_prior'] = [np.random.uniform, 1.8, 2.3]
-#macromodel_priors['gamma_macro_prior'] = ['FIXED', 2.170962864395913]
-
-
-# FOR A CUSTOM SHEAR PRIOR:
-macromodel_priors['shear_strength_prior'] = [np.random.uniform, 0.05, 0.25]
-#macromodel_priors['shear_strength_prior'] = ['FIXED', 0.2677285318751138]
-
-# the present lenses also have built-in shear priors determined based on what values get accepted after running ABC;
-# using a broader prior, you will waste some time exploring parameter space that will get rejected
-shear_min, shear_max = lens_data.kwargs_macromodel['shear_amplitude_min'], lens_data.kwargs_macromodel['shear_amplitude_max']
-print(shear_min, shear_max)
-macromodel_priors['shear_strength_prior'] = [np.random.uniform, shear_min, shear_max]
+kwargs_sample_source = {'source_size_pc': ['UNIFORM', 25, 60]}
+kwargs_sample_macro_fixed = {
+    'a4_a': ['GAUSSIAN', 0.0, 0.01], 
+    'a3_a': ['GAUSSIAN', 0.0, 0.005],
+    'delta_phi_m3': ['GAUSSIAN', -np.pi/6, np.pi/6]
+}
+kwargs_model_class = {'shapelets_order': 10} # source complexity
 
 # Run the simulation
-forward_model(output_path, job_index, lens_data, n_keep, realization_priors, macromodel_priors,
-              tolerance=summary_statistic_tolerance, verbose=False, test_mode=False, save_realizations=True)
+forward_model(output_path, job_index, n_keep, data_class, model, preset_model_name, 
+              kwargs_sample_realization, kwargs_sample_source, kwargs_sample_macro_fixed,
+              tolerance=summary_statistic_tolerance, log_mlow_mass_sheets = 8.0, kwargs_model_class = kwargs_model_class, verbose=False, test_mode=False)
 
 f = open(output_path + 'job_'+str(job_index)+'/parameters.txt', 'r')
 param_names = f.readlines()[0]
