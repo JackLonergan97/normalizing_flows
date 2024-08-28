@@ -1,0 +1,237 @@
+              ##                                     
+   ####        #                  #                  
+  #   #        #             #                       
+ #       ###   #  ###   ### ###  ##   ### ## ##   ## 
+ #       #  #  #  #  # #  #  #    #  #  #  #  #  #   
+ #   ###  ###  #   ### #     #    #  #     #  #   #  
+  #   #  #  #  #  #  # #     #    #  #     #  #    # 
+   ####  #### ### ####  ###   ## ###  ###   #### ##  
+
+ © 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
+   2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024
+   - Andrew Benson
+
+MM: NOTE: datasets are being read from /home/jlonergan/Galacticus/datasets/
+MM: -> WARNING: problems found with input parameters:
+MM:     unrecognized parameter [backtrackToSatellites in parameters/mergerTreeEvolver/] (did you mean [profileSteps]?)
+MM: <- 
+MM: -> WARNING: problems found with input parameters:
+MM:     unrecognized parameter [virialDensityContrastDefinition in parameters/nodePropertyExtractor/nodePropertyExtractor/] (did you mean [propertyName]?)
+MM: <- 
+MM: -> Begin task: merger tree evolution
+Om_b h^2             =  0.022369
+Om_c h^2             =  0.120694
+Om_nu h^2            =  0.000000
+Om_darkenergy        =  0.684608
+Om_K                 =  0.000000
+Om_m (inc Om_u)      =  0.315300
+100 theta (CosmoMC)  =  1.040138
+Age of universe/GYr  =  13.795
+zstar                =  1090.11
+r_s(zstar)/Mpc       =  144.25
+100*theta            =  1.040221
+DA(zstar)/Gpc        =  13.86721
+zdrag                =  1060.09
+r_s(zdrag)/Mpc       =  146.91
+k_D(zstar) Mpc       =  0.1409
+100*theta_D          =  0.160760
+z_EQ (if v_nu=1)     =  3418.64
+k_EQ Mpc (if v_nu=1) =  0.010434
+100*theta_EQ         =  0.809715
+100*theta_rs_EQ      =  0.447509
+tau_recomb/Mpc       =  280.35  tau_now/Mpc =  14147.3
+at z =100.000 sigma8 (all matter) =  0.0105
+at z =100.000 sigma8^2_vd/sigma8  =  0.0104
+Om_b h^2             =  0.022369
+Om_c h^2             =  0.120694
+Om_nu h^2            =  0.000000
+Om_darkenergy        =  0.684608
+Om_K                 =  0.000000
+Om_m (inc Om_u)      =  0.315300
+100 theta (CosmoMC)  =  1.040138
+Age of universe/GYr  =  13.795
+zstar                =  1090.11
+r_s(zstar)/Mpc       =  144.25
+100*theta            =  1.040221
+DA(zstar)/Gpc        =  13.86721
+zdrag                =  1060.09
+r_s(zdrag)/Mpc       =  146.91
+k_D(zstar) Mpc       =  0.1409
+100*theta_D          =  0.160760
+z_EQ (if v_nu=1)     =  3418.64
+k_EQ Mpc (if v_nu=1) =  0.010434
+100*theta_EQ         =  0.809715
+100*theta_rs_EQ      =  0.447509
+tau_recomb/Mpc       =  280.29  tau_now/Mpc =  14147.3
+at z =100.000 sigma8 (all matter) =  0.0105
+at z =100.000 sigma8^2_vd/sigma8  =  0.0104
+MM:     -> retabulating σ(M)
+MM:         mass range:  0.16E+13    <  0.20E+14    <  0.25E+15    M☉
+MM:         time range:   13.8005    <    9.8890    <   13.8005    Gyr
+Om_b h^2             =  0.022369
+Om_c h^2             =  0.120694
+Om_nu h^2            =  0.000000
+Om_darkenergy        =  0.684608
+Om_K                 =  0.000000
+Om_m (inc Om_u)      =  0.315300
+100 theta (CosmoMC)  =  1.040138
+Age of universe/GYr  =  13.795
+zstar                =  1090.11
+r_s(zstar)/Mpc       =  144.25
+100*theta            =  1.040221
+DA(zstar)/Gpc        =  13.86721
+zdrag                =  1060.09
+r_s(zdrag)/Mpc       =  146.91
+k_D(zstar) Mpc       =  0.1409
+100*theta_D          =  0.160760
+z_EQ (if v_nu=1)     =  3418.64
+k_EQ Mpc (if v_nu=1) =  0.010434
+100*theta_EQ         =  0.809715
+100*theta_rs_EQ      =  0.447509
+tau_recomb/Mpc       =  280.29  tau_now/Mpc =  14147.3
+at z =100.000 sigma8 (all matter) =  0.0105
+at z =100.000 sigma8^2_vd/sigma8  =  0.0104
+MM:     <- done
+MM:     writing σ(M) data to: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+01:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+01:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+01:     -> retabulating σ(M)
+01:         mass range:  0.10E+08    <  0.10E+09    <  0.25E+15    M☉
+01:         time range:   13.8005    <    9.8890    <   13.8005    Gyr
+Om_b h^2             =  0.022369
+Om_c h^2             =  0.120694
+Om_nu h^2            =  0.000000
+Om_darkenergy        =  0.684608
+Om_K                 =  0.000000
+Om_m (inc Om_u)      =  0.315300
+100 theta (CosmoMC)  =  1.040138
+Age of universe/GYr  =  13.795
+zstar                =  1090.11
+r_s(zstar)/Mpc       =  144.25
+100*theta            =  1.040221
+DA(zstar)/Gpc        =  13.86721
+zdrag                =  1060.09
+r_s(zdrag)/Mpc       =  146.91
+k_D(zstar) Mpc       =  0.1409
+100*theta_D          =  0.160760
+z_EQ (if v_nu=1)     =  3418.64
+k_EQ Mpc (if v_nu=1) =  0.010434
+100*theta_EQ         =  0.809715
+100*theta_rs_EQ      =  0.447509
+tau_recomb/Mpc       =  280.20  tau_now/Mpc =  14147.3
+at z =100.000 sigma8 (all matter) =  0.0105
+at z =100.000 sigma8^2_vd/sigma8  =  0.0104
+01:     <- done
+01:     writing σ(M) data to: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+08:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+21:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+11:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+20:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+23:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+03:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+14:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+06:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+05:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+22:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+12:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+02:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+15:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+16:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+19:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+18:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+04:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+13:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+07:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+09:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+17:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+10:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+MM:     NOTE: memory available (125.000 GB) determined from SLURM
+MM:     Memory usage: 1.004 GB / 125.000 GB
+MM:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+MM:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+MM:     reading σ(M) data from: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+MM:     -> retabulating σ(M)
+MM:         mass range:  0.63E+06    <  0.66E+07    <  0.25E+15    M☉
+MM:         time range:   13.8005    <    0.1671    <   13.8005    Gyr
+MM:     <- done
+MM:     writing σ(M) data to: /home/jlonergan/Galacticus/datasets/dynamic/largeScaleStructure/cosmologicalMassVarianceFilteredPower_91c4644a4454b00c43b30d6f2dfb47f0.hdf5
+ Galacticus experienced a segfault - will try to flush data before exiting.
+  => Error occurred in master thread
+  => Command line was: ./Galacticus.exe parameters/tutorials/darkMatterOnlySubHalosCDM.xml
+  => The following warnings were issued:
+ Using default value for parameter '[errorWaitTime]'
+ Using default value for parameter '[componentBlackHole/tripleInteraction]'
+ Using default value for parameter '[componentSatellite/initializationTypeMassBound]'
+ Using default value for parameter '[stellarPopulationSpectraPostprocessorBuilder/names]'
+ Using default class for parameter '[stellarPopulationSpectraPostprocessor]'
+ Using default class for parameter '[stellarPopulationSpectraPostprocessorBuilder]'
+ Using default value for parameter '[task/walltimeMaximum]'
+ Using default value for parameter '[mergerTreeConstructor/timeSnapTolerance]'
+ Using default value for parameter '[mergerTreeBuilder/toleranceTimeEarliest]'
+ Using default value for parameter '[criticalOverdensity/normalization]'
+ Using default value for parameter '[powerSpectrumPrimordial/runningRunning]'
+ Using default value for parameter '[transferFunction/cambCountPerDecade]'
+ Using default value for parameter '[cosmologicalMassVariance/truncateAtParticleHorizon]'
+ Using default value for parameter '[mergerTreeBranchingProbability/precisionHypergeometric]'
+ Using default class for parameter '[mergerTreeBuildController]'
+ Using default value for parameter '[mergerTreeBuildMasses/radiusTree]'
+ Using default value for parameter '[virialDensityContrast/tableStore]'
+ Using default class for parameter '[darkMatterHaloScale]'
+ Using default value for parameter '[darkMatterProfileScaleRadius/darkMatterProfileScaleRadius/useMeanConcentration]'
+ Using default value for parameter '[darkMatterProfileDMO/velocityDispersionApproximate]'
+ Using default value for parameter '[darkMatterProfileDMO/darkMatterProfileDMO/velocityDispersionUseSeriesExpansion]'
+ Using default value for parameter '[darkMatterProfileHeating/coefficientSecondOrder0]'
+ Using default value for parameter '[darkMatterProfileConcentration/darkMatterProfileScaleRadius/darkMatterProfileScaleRadius/kappa]'
+ Using default value for parameter '[nodeOperator/nodeOperator/angularMomentumVarianceSpecific]'
+ Using default class for parameter '[galacticStructure]'
+ Using default value for parameter '[satelliteTidalStripping/useDynamicalTimeScale]'
+ Using default value for parameter '[satelliteTidalStrippingRadius/efficiencyCentrifugal]'
+ Using default class for parameter '[satelliteTidalStrippingRadius]'
+ Using default value for parameter '[randomNumberGenerator/ompThreadOffset]'
+ Using default class for parameter '[mergerTreeOperator]'
+ Using default value for parameter '[evolveForestsWorkShare/doPing]'
+ Using default class for parameter '[universeOperator]'
+ Using default value for parameter '[mergerTreeEvolver/allTreesExistAtFinalTime]'
+ Using default value for parameter '[mergerTreeNodeEvolver/odeJacobianStepSizeRelative]'
+ Using default class for parameter '[mergerTreeEvolveProfiler]'
+ Using default class for parameter '[mergerTreeInitializor]'
+ Using default class for parameter '[mergerTreeEvolveConcurrency]'
+ Using default value for parameter '[mergerTreeOutputter/mergerTreeOutputter/outputsGroupName]'
+#0  0x81fb4c in signal_handler_sigsegv
+	at ./work/build/error.p.F90:415
+#1  0x2c7bdef in ???
+#2  0x0 in ???
+ Using default value for parameter '[nodePropertyExtractor/nodePropertyExtractor/propertyName]'
+ Using default value for parameter '[darkMatterProfileDMO/nodePropertyExtractor/nodePropertyExtractor/velocityDispersionUseSeriesExpansion]'
+ Using default value for parameter '[virialDensityContrastDefinition/outputAnalysis/outputAnalysis/allowUnsupportedCosmology]'
+ Using default class for parameter '[hotHaloTemperatureProfile]'
+
+Program aborted. Backtrace:
+#0  0x81fb5f in signal_handler_sigsegv
+	at ./work/build/error.p.F90:431
+#1  0x2c7bdef in ???
+#2  0x0 in ???
+Command terminated by signal 6
+	Command being timed: "./Galacticus.exe parameters/tutorials/darkMatterOnlySubHalosCDM.xml"
+	User time (seconds): 420.87
+	System time (seconds): 5.08
+	Percent of CPU this job got: 410%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:43.85
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1143060
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1613
+	Minor (reclaiming a frame) page faults: 423755
+	Voluntary context switches: 179757
+	Involuntary context switches: 460
+	Swaps: 0
+	File system inputs: 272112
+	File system outputs: 1672
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
