@@ -11,8 +11,10 @@
   </randomNumberGenerator>
 
   <!-- Task -->
-  <task                   value="evolveForests"/>
-  <evolveForestsWorkShare value="FCFS  "       />
+  <task                   value="evolveForests">
+    <evolveForestsInParallel value="false"/>
+  </task>
+  <evolveForestsWorkShare value="FCFS"/>
 
   <!-- Component selection -->
   <componentBasic value="standard"/>
@@ -99,7 +101,7 @@
   <mergerTreeConstructor value="build"    >
     <redshiftBase value="0.34"/>
   </mergerTreeConstructor>
-  <mergerTreeBuilder     value="cole2000" >
+  <mergerTreeBuilder     value="cole2000Parallel" >
     <accretionLimit   value="  0.1"/>
     <mergeProbability value="  0.1"/>
     <redshiftMaximum  value="100.0"/>
@@ -112,7 +114,7 @@
   </mergerTreeBranchingProbability>
   <mergerTreeBuildMasses value="fixedMass">
     <massTree  value="1.995e13"/>
-    <treeCount value="1000"   />
+    <treeCount value="1"   />
   </mergerTreeBuildMasses>
 
   <!--
@@ -126,7 +128,7 @@
 
   <!-- Halo mass resolution -->
   <mergerTreeMassResolution value="fixed">
-    <massResolution value="1.0e6"/>
+    <massResolution value="1.0e8"/>
   </mergerTreeMassResolution>
 
   <!-- Substructure hierarchy options -->
@@ -235,12 +237,13 @@
   
   <!-- Numerical tolerances -->
   <!-- Tree evolution -->
-  <mergerTreeEvolver       value="standard" >
+  <mergerTreeEvolver       value="threaded" >
     <timestepHostAbsolute             value="1.00"/>
     <timestepHostRelative             value="0.10"/>
     <fractionTimestepSatelliteMinimum value="0.75"/>
     <backtrackToSatellites            value="true"/>
   </mergerTreeEvolver>
+  <mergerTreeEvolveConcurrence value="halosSubhalos"/>
   <mergerTreeNodeEvolver value="standard">
     <odeToleranceAbsolute value="0.01"  />
     <odeToleranceRelative value="0.01"  />
@@ -259,7 +262,7 @@
   </mergerTreeEvolveTimestep>
 
   <!-- Output options -->
-  <outputFileName value="darkMatterOnlySubHalosCDM_res6_annulus.hdf5"/>
+  <outputFileName value="darkMatterOnlySubHalosCDM_res8_annulus.hdf5"/>
   <mergerTreeOutputter value="multi">
     <mergerTreeOutputter value="standard">
       <outputReferences value="false"/>
