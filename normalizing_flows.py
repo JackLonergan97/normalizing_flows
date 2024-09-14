@@ -21,9 +21,6 @@ print(' ')
 np.set_printoptions(suppress=True)
 dm_model = sys.argv[1]
 
-#if (dm_model != 'CDM') and (dm_model != 'WDM') and  (dm_model != 'CDM_cat') and (dm_model != 'CDM_res6') & (dm_model != 'CDM_sub_res8'):
-#    raise Exception('The dark matter model in .sh file written after "normalizing_flows.py" was entered incorrectly!')
-
 f = h5py.File('darkMatterOnlySubHalos' + dm_model + '.hdf5', 'r')
 mergerTreeBuildMassesGroup = f['Parameters/mergerTreeBuildMasses']
 massResolutionGroup = f['Parameters/mergerTreeMassResolution']
@@ -137,7 +134,7 @@ reg = 0.01
 
 
 def Coupling(input_shape):
-    input = keras.layers.Input(shape=input_shape)
+    input = keras.layers.Input(shape=(input_shape,))
 
     t_layer_1 = keras.layers.Dense(
         output_dim, activation="relu", kernel_regularizer=regularizers.l2(reg)
@@ -256,10 +253,10 @@ history = model.fit(
     augmented_normalized_data, batch_size=256, epochs=200, verbose=2, validation_split=0.2
 )
 
-model.save_weights('../data/emulatorModel' + dm_model)
+model.save_weights('../data/emulatorModel' + dm_model + '.weights.h5')
 
 emulator = RealNVP(num_coupling_layers=12)
-emulator.load_weights('../data/emulatorModel' + dm_model)
+emulator.load_weights('../data/emulatorModel' + dm_model + '.weights.h5')
 
 # From Galacticus space to Gaussian space.
 z, _ = emulator(normalized_data)
@@ -351,6 +348,14 @@ np.savetxt('emulator_data_' + dm_model + '.txt', xt)
 #axes[4, 1].set(title="Generated", xlabel="Mass infall", ylabel="Tidal heating")
 #axes[4, 1].set_xlim([-6, 0])
 #axes[4, 1].set_ylim([-3.0, 5.0])
+
+print('len(data[:,0]): ', len(data[:,0]))
+print('data[:,3]: ', data[:,3])
+print('xt[:,3]: ', xt[:,3])
+print('clip: ', clip)
+print('np.shape(data[:,0]): ', np.shape(data[:,0]))
+print('len(xt[clip]): ', len(xt[clip]))
+print('subsample: ', subsample)
 
 # Testing now to create Density plots
 from scipy.stats import gaussian_kde
