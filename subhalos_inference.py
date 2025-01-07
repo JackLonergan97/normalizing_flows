@@ -16,7 +16,7 @@ from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
-dm_model = sys.argv[1]
+dm_model = sys.argv[1] 
 
 # Reading in the data and converting it from a string to a list of lists and floats.
 necessary_data = open("necessary_data_" + dm_model + ".txt", "r")
@@ -45,7 +45,7 @@ output_dim = 256
 reg = 0.01
 
 def Coupling(input_shape):
-    input = keras.layers.Input(shape=input_shape)
+    input = keras.layers.Input(shape=(input_shape,))
 
     t_layer_1 = keras.layers.Dense(
         output_dim, activation="relu", kernel_regularizer=regularizers.l2(reg)
@@ -157,7 +157,7 @@ class RealNVP(keras.Model):
         return {"loss": self.loss_tracker.result()}
 
 emulator = RealNVP(num_coupling_layers=12)
-emulator.load_weights('../data/emulatorModel' + dm_model)
+emulator.load_weights('../data/emulatorModel' + dm_model + '.weights.h5')
 
 def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
 
@@ -169,7 +169,6 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
     radiusVirialHost = lines[5]
     countSubhalosMean = lines[6]
 
-    # reading in necessary data so that N can be drawn from a N.B. distribution rather than N = 30,000
     s_I = 0.18
     p = 1/(1 + countSubhalosMean*s_I**2)
     r = 1/s_I**2
@@ -200,16 +199,6 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
         xt = norm_transform_inv(x, data_min, data_max, -1, 1)
         clip = (xt[:,0] > np.log10(2.0*massResolution/massTree)) & (xt[:,0] < np.log10(1e9/massHost)) & (xt[:,2] <= 0.0) & (xt[:,2] > -xt[:,0]+np.log10(massResolution/massTree)) & (xt[:,3] >= 0.0) & (xt[:,3] >= 0.34) & (xt[:,1] >= min_concentration)
 
-        print('N: ', N)
-        print('np.shape(data) before if/else statements: ', np.shape(data))
-        print('len(data) before if/else statements: ', len(data))
-        print('data.ndim before if/else statements: ', data.ndim)
-        print('np.shape(xt): ', np.shape(xt))
-        print('np.shape(xt[clip]): ', np.shape(xt[clip]))
-        print('xt[clip].ndim: ', xt[clip].ndim)
-        print('starting if/else statements')
-        print('')
-
         if len(data) > N:
             data = data[:int(N)]
         elif len(data) < N:
@@ -221,21 +210,10 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
                     data = np.array([xt[clip][0]])
                 else:
                     data = np.vstack((data, xt[clip][j]))
-            print('np.shape(data) after iteration ' + str(i) + ':', np.shape(data))
-            print('starting new iteration')
-            print('')
             continue
         else:
             pass
-        print('finished with if/else statements')
-        print('data after if/else statements: ', data)
-        print('np.shape(data): ', np.shape(data))
-        print('')
         if isinstance(data[0], float):
-            print('sampled N.B. value: ', N)
-            print('exception data: ', data)
-            print('shape of exception data: ', np.shape(data))
-            print('')
             reg_massInfall.append(massHost * (10**data[0]))
             reg_massBound = [np.array(reg_massInfall[0] * 10**data[2])]
             reg_concentration.append(data[1])
@@ -283,42 +261,40 @@ def emulator_data(emulator = emulator, lines = lines, num_iterations = 1):
 #f.close()
 #jkl
 
-num_iterations = 1
-
 # Constructing initialized parameters
-output_path = os.getcwd() + '/emulator_inference_output_' + dm_model + '/' #CHANGE THIS WHEN WORKING ON STANDARD OR EMULATOR
-#output_path = os.getcwd() + '/em_test/'
-job_index = sys.argv[2]
-#job_index = 1
-n_keep = 100
-#n_keep = 2
+#output_path = os.getcwd() + '/emulator_inference_output_' + dm_model + '/' #CHANGE THIS WHEN WORKING ON STANDARD OR EMULATOR
+output_path = os.getcwd() + '/test/'
+#job_index = sys.argv[2]
+job_index = 1
+#n_keep = 100
+n_keep = 2
 summary_statistic_tolerance = 1e5
 
 from samana.Data.b1422 import B1422_HST
 from samana.Model.b1422_model import B1422ModelEPLM3M4Shear
 data_class = B1422_HST()
 model = B1422ModelEPLM3M4Shear
-preset_model_name = 'WDMEmulator'
+preset_model_name = 'CDM'
 
 kwargs_sample_realization = {}
 kwargs_sample_realization['LOS_normalization'] = ['FIXED', 0.]
 kwargs_sample_realization['log_m_host'] = ['FIXED', 13.3]
 kwargs_sample_realization['cone_opening_angle_arcsec'] = ['FIXED', 8.0]
 #kwargs_sample_realization['sigma_sub'] = ['FIXED', 3/5 * 0.357]
-kwargs_sample_realization['sigma_sub'] = ['FIXED', 0.006]
-kwargs_sample_realization['log_mlow'] = ['FIXED', 8.0]
+kwargs_sample_realization['sigma_sub'] = ['FIXED', 0.12]
+kwargs_sample_realization['log_mlow'] = ['FIXED', 6.0]
 kwargs_sample_realization['log_mhigh'] = ['FIXED', 9.0]
 
 # WDM specific parameter
-kwargs_sample_realization['log_mc'] = ['UNIFORM', 4.8, 10.0] 
+#kwargs_sample_realization['log_mc'] = ['UNIFORM', 4.8, 10.0] 
 
 # parameter for emulator data (keep commented out when not working with emulator)
-kwargs_sample_realization['emulator_input'] = ['FIXED', emulator_data]
+#kwargs_sample_realization['emulator_input'] = ['FIXED', emulator_data]
 
-kwargs_sample_source = {'source_size_pc': ['UNIFORM', 25, 60]}
+kwargs_sample_source = {'source_size_pc': ['FIXED', 5]}
 kwargs_sample_macro_fixed = {
-    'a4_a': ['GAUSSIAN', 0.0, 0.01], 
-    'a3_a': ['GAUSSIAN', 0.0, 0.005],
+    'a4_a': ['FIXED', 0.0], 
+    'a3_a': ['FIXED', 0.0],
     'delta_phi_m3': ['GAUSSIAN', -np.pi/6, np.pi/6]
 }
 kwargs_model_class = {'shapelets_order': 10} # source complexity
@@ -326,7 +302,7 @@ kwargs_model_class = {'shapelets_order': 10} # source complexity
 # Run the simulation
 forward_model(output_path, job_index, n_keep, data_class, model, preset_model_name, 
               kwargs_sample_realization, kwargs_sample_source, kwargs_sample_macro_fixed,
-              tolerance=summary_statistic_tolerance, log_mlow_mass_sheets = 8.0, kwargs_model_class = kwargs_model_class, verbose=False, test_mode=False)
+              tolerance=summary_statistic_tolerance, log_mlow_mass_sheets = 6.0, kwargs_model_class = kwargs_model_class, verbose=False, test_mode=False)
 
 f = open(output_path + 'job_'+str(job_index)+'/parameters.txt', 'r')
 param_names = f.readlines()[0]
